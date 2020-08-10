@@ -5,7 +5,7 @@
 PKG_NAME    := $(shell python setup.py --name)
 PKG_VERSION := $(shell python setup.py --version)
 
-.PHONY: clean deps fmt github-tag lint test ci-test version help
+.PHONY: clean deps fmt github-tag lint test unit-test version help ci-pypi-release
 .DEFAULT_GOAL := help
 
 clean:  ## Clean up build artifacts
@@ -35,4 +35,8 @@ help:  ## Print usage information
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
 
 
-ci-test: test
+# Needed for Jenkins CI Pipeline
+unit-test: test
+
+ci-pypi-release:
+	tox -e release
