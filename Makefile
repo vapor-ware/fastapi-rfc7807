@@ -36,7 +36,8 @@ help:  ## Print usage information
 
 
 # Needed for Jenkins CI Pipeline
-unit-test: test
+unit-test:
+	tox -e py38
 
 ci-pypi-release:
 	tox -e release

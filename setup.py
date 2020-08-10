@@ -34,7 +34,7 @@ setup(
     author_email=pkg['__author_email__'],
     packages=find_packages(),
     package_data={'': ['LICENSE']},
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     install_requires=[
         'fastapi',
         'starlette',
@@ -45,8 +45,6 @@ setup(
     classifiers=[
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
