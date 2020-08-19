@@ -33,7 +33,11 @@ setup(
     author=pkg['__author__'],
     author_email=pkg['__author_email__'],
     packages=find_packages(),
-    package_data={'': ['LICENSE']},
+    package_data={
+        '': ['LICENSE'],
+        'fastapi_rfc7807': ['py.typed'],
+    },
+    include_package_data=True,
     python_requires='>=3.8',
     install_requires=[
         'fastapi',
@@ -50,5 +54,4 @@ setup(
         'Operating System :: OS Independent',
     ],
     zip_safe=False,
-    include_package_data=True,
 )
