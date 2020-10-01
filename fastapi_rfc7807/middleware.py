@@ -15,6 +15,9 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+PreHook = Callable[[Request, Exception], Union[Any, Awaitable[Any]]]
+PostHook = Callable[[Request, Response, Exception], Union[Any, Awaitable[Any]]]
+
 
 class ProblemResponse(Response):
     """A Response for RFC7807 Problems."""
@@ -242,10 +245,8 @@ def from_exception(exc: Exception) -> Problem:
 
 def get_exception_handler(
         debug: bool = False,
-        hooks: Optional[Sequence[Union[
-            Callable[[Request, Exception], Any],
-            Callable[[Request, Exception], Awaitable[Any]]
-        ]]] = None,
+        pre_hooks: Optional[Sequence[PreHook]] = None,
+        post_hooks: Optional[Sequence[PostHook]] = None,
 ) -> Callable:
     """A custom FastAPI exception handler constructor.
 
@@ -266,35 +267,39 @@ def get_exception_handler(
 
     Args:
         debug: Configure the handler for pretty-printing response JSON.
-        hooks: Functions which are run prior to generating a response.
+        pre_hooks: Functions which are run before generating a response.
+        post_hooks: Functions which are run after generating a response.
     """
-    hooks = hooks or []
-
     async def exception_handler(request: Request, exc: Exception) -> ProblemResponse:
-        nonlocal debug, hooks
-        if hooks:
-            for hook in hooks:
-                try:
-                    if asyncio.iscoroutinefunction(hook):
-                        await hook(request, exc)
-                    else:
-                        hook(request, exc)
-                except:  # noqa
-                    # Ignore any exceptions raised by the hook. It is up to the
-                    # developer to ensure hooks do not error, or that they log their
-                    # own errors for visibility.
-                    pass
+        nonlocal debug, pre_hooks, post_hooks
 
-        return ProblemResponse(exc, debug=debug)
+        await exec_hooks(pre_hooks, request, exc)
+        response = ProblemResponse(exc, debug=debug)
+        await exec_hooks(post_hooks, request, response, exc)
+
+        return response
     return exception_handler
+
+
+async def exec_hooks(hooks: Optional[Sequence[Union[PreHook, PostHook]]], *args) -> None:
+    """Helper function to execute hooks, if any are defined.
+
+    Args:
+        hooks: The hooks, if any, to execute.
+        args: Positional arguments to pass to the hooks.
+    """
+    if hooks:
+        for hook in hooks:
+            if asyncio.iscoroutinefunction(hook):
+                await hook(*args)
+            else:
+                hook(*args)
 
 
 def register(
     app: FastAPI,
-    hooks: Optional[Sequence[Union[
-        Callable[[Request, Exception], Any],
-        Callable[[Request, Exception], Awaitable[Any]]
-    ]]] = None,
+    pre_hooks: Optional[Sequence[PreHook]] = None,
+    post_hooks: Optional[Sequence[PostHook]] = None,
 ) -> None:
     """Register the FastAPI RFC7807 middleware with a FastAPI application instance.
 
@@ -320,13 +325,14 @@ def register(
 
     Args:
         app: The FastAPI application instance to register with.
-        hooks: Functions to run prior to returning a ProblemResponse.
+        pre_hooks: Functions which are run before generating a response.
+        post_hooks: Functions which are run after generating a response.
     """
-    _handler = get_exception_handler(debug=app.debug, hooks=hooks)
+    _handler = get_exception_handler(debug=app.debug, pre_hooks=pre_hooks, post_hooks=post_hooks)
 
     app.add_exception_handler(HTTPException, _handler)
     app.add_exception_handler(RequestValidationError, _handler)
-    app.add_middleware(ProblemMiddleware, debug=app.debug, hooks=hooks)
+    app.add_middleware(ProblemMiddleware, debug=app.debug, pre_hooks=pre_hooks, post_hooks=post_hooks)
 
 
 class ProblemMiddleware:
@@ -342,18 +348,18 @@ class ProblemMiddleware:
             self,
             app: ASGIApp,
             debug: bool = False,
-            hooks: Optional[Sequence[Union[
-                Callable[[Request, Exception], Any],
-                Callable[[Request, Exception], Awaitable[Any]]
-            ]]] = None,
+            pre_hooks: Optional[Sequence[PreHook]] = None,
+            post_hooks: Optional[Sequence[PostHook]] = None,
     ) -> None:
         self.app: ASGIApp = app
-        self.hooks = hooks or []
+        self.pre_hooks = pre_hooks or []
+        self.post_hooks = post_hooks or []
         self.debug: bool = debug
 
         self._handler = get_exception_handler(
             debug=self.debug,
-            hooks=self.hooks,
+            pre_hooks=self.pre_hooks,
+            post_hooks=self.post_hooks,
         )
 
     # See: starlette.middleware.errors.ServerErrorMiddleware
@@ -376,7 +382,6 @@ class ProblemMiddleware:
         except Exception as exc:
             if not response_started:
                 response = await self._handler(Request(scope), exc)
-                # response = await request_exception_handler(Request(scope), exc)
                 await response(scope, receive, send)
 
             # Continue to raise the exception. This allows the exception to

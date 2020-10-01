@@ -431,11 +431,11 @@ async def test_get_exception_handler_debug():
 
 
 @pytest.mark.asyncio
-async def test_get_exception_handler_hooks():
+async def test_get_exception_handler_pre_hooks_ok():
     hook1 = AsyncMock()
     hook2 = MagicMock()
-    hook3 = MagicMock(side_effect=ValueError)
-    handler = middleware.get_exception_handler(hooks=[hook1, hook2, hook3])
+    hook3 = MagicMock()
+    handler = middleware.get_exception_handler(pre_hooks=[hook1, hook2, hook3])
 
     resp = await handler(
         request=Request(scope={
@@ -448,6 +448,112 @@ async def test_get_exception_handler_hooks():
     assert isinstance(resp, middleware.ProblemResponse)
     assert resp.debug is False
     assert resp.body == b'{"exc_type":"ValueError","type":"about:blank","title":"Unexpected Server Error","status":500,"detail":"test error"}'  # noqa
+
+    hook1.assert_awaited_once()
+    hook2.assert_called_once()
+    hook3.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_exception_handler_pre_hooks_bad_hook():
+    # hook has too few arguments
+    handler = middleware.get_exception_handler(pre_hooks=[lambda x: x])
+
+    with pytest.raises(TypeError) as err:
+        await handler(
+            request=Request(scope={
+                'type': 'http',
+                'app': FastAPI()},
+            ),
+            exc=ValueError('test error'),
+        )
+
+    assert 'takes 1 positional argument but 2 were given' in str(err.value)
+
+
+@pytest.mark.asyncio
+async def test_get_exception_handler_pre_hooks_error():
+    hook1 = AsyncMock()
+    hook2 = MagicMock()
+    hook3 = MagicMock(side_effect=ValueError('hook error'))
+
+    handler = middleware.get_exception_handler(pre_hooks=[hook1, hook2, hook3])
+
+    with pytest.raises(ValueError) as err:
+        await handler(
+            request=Request(scope={
+                'type': 'http',
+                'app': FastAPI()},
+            ),
+            exc=ValueError('test error'),
+        )
+
+    assert 'hook error' == str(err.value)
+
+    hook1.assert_awaited_once()
+    hook2.assert_called_once()
+    hook3.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_exception_handler_post_hooks_ok():
+    hook1 = AsyncMock()
+    hook2 = MagicMock()
+    hook3 = MagicMock()
+    handler = middleware.get_exception_handler(post_hooks=[hook1, hook2, hook3])
+
+    resp = await handler(
+        request=Request(scope={
+            'type': 'http',
+            'app': FastAPI()},
+        ),
+        exc=ValueError('test error'),
+    )
+
+    assert isinstance(resp, middleware.ProblemResponse)
+    assert resp.debug is False
+    assert resp.body == b'{"exc_type":"ValueError","type":"about:blank","title":"Unexpected Server Error","status":500,"detail":"test error"}'  # noqa
+
+    hook1.assert_awaited_once()
+    hook2.assert_called_once()
+    hook3.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_exception_handler_post_hooks_bad_book():
+    # hook has too few arguments
+    handler = middleware.get_exception_handler(post_hooks=[lambda x: x])
+
+    with pytest.raises(TypeError) as err:
+        await handler(
+            request=Request(scope={
+                'type': 'http',
+                'app': FastAPI()},
+            ),
+            exc=ValueError('test error'),
+        )
+
+    assert 'takes 1 positional argument but 3 were given' in str(err.value)
+
+
+@pytest.mark.asyncio
+async def test_get_exception_handler_post_hooks_error():
+    hook1 = AsyncMock()
+    hook2 = MagicMock()
+    hook3 = MagicMock(side_effect=ValueError('hook error'))
+
+    handler = middleware.get_exception_handler(post_hooks=[hook1, hook2, hook3])
+
+    with pytest.raises(ValueError) as err:
+        await handler(
+            request=Request(scope={
+                'type': 'http',
+                'app': FastAPI()},
+            ),
+            exc=ValueError('test error'),
+        )
+
+    assert 'hook error' == str(err.value)
 
     hook1.assert_awaited_once()
     hook2.assert_called_once()
