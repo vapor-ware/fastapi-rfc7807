@@ -1,7 +1,7 @@
 """"""
 
 __title__ = 'fastapi_rfc7807'
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 __description__ = 'FastAPI middleware for RFC-7807 compliant error responses'
 __author__ = 'Erick Daniszewski'
 __author_email__ = 'erick@vapor.io'
