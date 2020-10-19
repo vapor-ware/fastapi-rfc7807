@@ -15,5 +15,5 @@ pythonPipeline([
   'skipIntegrationTest': true,
   'skipDocker': true,
   'skipSetup': true,
-  'publishToGithub': true,
+  'publishToGitHub': true,
 ])
