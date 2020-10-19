@@ -39,5 +39,5 @@ help:  ## Print usage information
 unit-test:
 	tox -e py38
 
-ci-pypi-release:
+pypi-release:
 	tox -e release
