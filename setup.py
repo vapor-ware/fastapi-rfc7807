@@ -42,6 +42,7 @@ setup(
     install_requires=[
         'fastapi',
         'starlette',
+        'pydantic',
     ],
     keywords=[
         'fastapi', 'errors', 'middleware', 'rfc7807',
