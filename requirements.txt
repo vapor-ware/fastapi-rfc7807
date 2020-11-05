@@ -4,7 +4,6 @@
 #
 #    pip-compile --output-file=requirements.txt setup.py
 #
-dataclasses==0.7          # via pydantic
 fastapi==0.60.1           # via fastapi_rfc7807 (setup.py)
-pydantic==1.6.1           # via fastapi
+pydantic==1.6.1           # via fastapi, fastapi_rfc7807 (setup.py)
 starlette==0.13.6         # via fastapi, fastapi_rfc7807 (setup.py)
