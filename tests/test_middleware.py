@@ -572,3 +572,26 @@ def test_register():
     assert len(app.user_middleware) == 1
     for key in app.exception_handlers:
         assert app.exception_handlers[key] != orig_handlers[key]
+
+    openapi = app.openapi()
+    assert 'components' not in openapi
+
+
+def test_register_add_schema_default():
+    app = FastAPI()
+
+    middleware.register(app, add_schema=True)
+
+    openapi = app.openapi()
+    assert 'components' in openapi
+    assert 'Problem' in openapi['components']['schemas']
+
+
+def test_register_add_schema_custom_name():
+    app = FastAPI()
+
+    middleware.register(app, add_schema='FancyProblem')
+
+    openapi = app.openapi()
+    assert 'components' in openapi
+    assert 'FancyProblem' in openapi['components']['schemas']
