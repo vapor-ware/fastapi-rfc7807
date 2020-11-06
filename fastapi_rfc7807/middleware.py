@@ -10,10 +10,13 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Sequence, Union
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.utils import get_model_definitions, get_openapi
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from . import schema
 
 PreHook = Callable[[Request, Exception], Union[Any, Awaitable[Any]]]
 PostHook = Callable[[Request, Response, Exception], Union[Any, Awaitable[Any]]]
@@ -300,6 +303,7 @@ def register(
     app: FastAPI,
     pre_hooks: Optional[Sequence[PreHook]] = None,
     post_hooks: Optional[Sequence[PostHook]] = None,
+    add_schema: Union[str, bool] = False,
 ) -> None:
     """Register the FastAPI RFC7807 middleware with a FastAPI application instance.
 
@@ -323,16 +327,83 @@ def register(
     to debug. Otherwise, the JSON response is serialized in a more compact
     format.
 
+    This can also add the Problem schema to the application's OpenAPI schema
+    definitions. This is useful when you want to have the Problem model defined
+    for other responses while preserving the application/problem+json header
+    value. For example,
+
+        @app.get(
+            path='/',
+            responses={
+                500: {'model': Problem}
+            }
+        )
+        def root():
+            ...
+
+    Using the "model" key would register the Scheme in the generated OpenAPI spec,
+    but it would document it with the "application/json" content type. Adding the
+    schema via `register` would allow the content type to be set correctly, albiet
+    more manually.
+
+        @app.get(
+            path='/',
+            responses={
+                500: {
+                    'content': {'application/problem+json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/Problem',
+                        },
+                    }},
+                }
+            }
+        )
+        def root():
+            ...
+
     Args:
         app: The FastAPI application instance to register with.
         pre_hooks: Functions which are run before generating a response.
         post_hooks: Functions which are run after generating a response.
+        add_schema: Add the Problem pydantic model as a schema to the application's
+            OpenAPI definitions. If this is a string, it will be added to the
+            schema using the string as the name.
     """
     _handler = get_exception_handler(debug=app.debug, pre_hooks=pre_hooks, post_hooks=post_hooks)
 
     app.add_exception_handler(HTTPException, _handler)
     app.add_exception_handler(RequestValidationError, _handler)
     app.add_middleware(ProblemMiddleware, debug=app.debug, pre_hooks=pre_hooks, post_hooks=post_hooks)
+
+    if add_schema:
+        if isinstance(add_schema, str):
+            name = add_schema
+        else:
+            name = 'Problem'
+
+        # Override the built-in OpenAPI docs generator with the wrapper.
+        # This allows the RFC7807 Problem schema to be added in, so it can be
+        # referenced in API route metadata.
+        def wrap_openapi() -> Dict:
+            if not app.openapi_schema:
+                app.openapi_schema = get_openapi(
+                    title=app.title,
+                    version=app.version,
+                    openapi_version=app.openapi_version,
+                    description=app.description,
+                    routes=app.routes,
+                    tags=app.openapi_tags,
+                    servers=app.servers,
+                )
+
+            app.openapi_schema.setdefault('components', {}).setdefault('schemas', {}).update(
+                get_model_definitions(
+                    flat_models={schema.Problem},
+                    model_name_map={schema.Problem: name},
+                ),
+            )
+            return app.openapi_schema
+        app.openapi = wrap_openapi  # type: ignore
 
 
 class ProblemMiddleware:
