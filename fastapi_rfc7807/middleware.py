@@ -6,7 +6,8 @@ For details on the Problem format, see: https://tools.ietf.org/html/rfc7807
 import asyncio
 import http
 import json
-from typing import Any, Awaitable, Callable, Dict, Optional, Sequence, Union
+from typing import (Any, Awaitable, Callable, Dict, Mapping, Optional,
+                    Sequence, Union)
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -30,6 +31,13 @@ class ProblemResponse(Response):
     def __init__(self, *args, debug: bool = False, **kwargs) -> None:
         self.debug: bool = debug
         super(ProblemResponse, self).__init__(*args, **kwargs)
+
+    def init_headers(self, headers: Mapping[str, str] = None) -> None:
+        h = dict(headers) if headers else {}
+        if hasattr(self, 'problem') and self.problem.headers:
+            h.update(self.problem.headers)
+
+        super(ProblemResponse, self).init_headers(h)
 
     def render(self, content: Any) -> bytes:
         """Render the provided content as an RFC-7807 Problem JSON-serialized bytes."""
@@ -57,6 +65,7 @@ class ProblemResponse(Response):
         # the status code of the Problem.
         self.status_code = p.status
 
+        self.problem = p
         return p.to_bytes()
 
 
@@ -75,6 +84,8 @@ class Problem(Exception):
     post-initialization, but nothing prevents you from doing so if you need
     more granular control over how/when values are set.
     """
+
+    headers: Dict[str, str] = {}
 
     def __init__(
             self,
