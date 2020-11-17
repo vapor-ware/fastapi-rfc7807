@@ -115,6 +115,26 @@ class TestProblemResponse:
             'content': "['some', 'other', 'data']",
         }
 
+    def test_render_with_headers(self):
+        class CustomErr(middleware.Problem):
+            headers = {
+                'custom-header': 'testing',
+            }
+
+        resp = middleware.ProblemResponse(
+            CustomErr(),
+        )
+
+        assert resp.media_type == 'application/problem+json'
+        assert resp.debug is False
+        assert resp.status_code == 500
+        assert resp.headers['custom-header'] == 'testing'
+        assert json.loads(resp.body) == {
+            'type': 'about:blank',
+            'status': 500,
+            'title': 'Internal Server Error',
+        }
+
 
 class TestProblem:
 

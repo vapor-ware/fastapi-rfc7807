@@ -7,16 +7,39 @@ Run from the `examples` directory with:
 
 from fastapi import FastAPI
 
-from fastapi_rfc7807.middleware import register
+from fastapi_rfc7807.middleware import register, Problem
 
 
 app = FastAPI()
 register(app)
 
 
+class AuthenticationError(Problem):
+    """An example of how to create a custom subclass of the Problem error.
+
+    This class also defines additional headers which should be sent with
+    the error response.
+    """
+
+    headers = {
+        'WWW-Authenticate': 'Bearer',
+    }
+
+    def __init__(self, msg: str) -> None:
+        super(AuthenticationError, self).__init__(
+            status=401,
+            detail=msg,
+        )
+
+
 @app.get('/')
 async def root():
     return {'message': 'Hello World'}
+
+
+@app.get('/auth')
+async def custom():
+    raise AuthenticationError('user is unauthenticated')
 
 
 @app.get('/error')
