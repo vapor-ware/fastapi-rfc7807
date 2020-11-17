@@ -41,7 +41,9 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         'fastapi',
-        'starlette',
+        # FIXME: temporarily pinned as the 0.14.x release has breaking changes and fastapi
+        #   has not yet been updated for them.
+        'starlette==0.13.6',
         'pydantic',
     ],
     keywords=[
