@@ -1,7 +1,7 @@
 
 import json
-from unittest.mock import AsyncMock, MagicMock
 
+import mock
 import pytest
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException, RequestValidationError
@@ -452,9 +452,9 @@ async def test_get_exception_handler_debug():
 
 @pytest.mark.asyncio
 async def test_get_exception_handler_pre_hooks_ok():
-    hook1 = AsyncMock()
-    hook2 = MagicMock()
-    hook3 = MagicMock()
+    hook1 = mock.AsyncMock()
+    hook2 = mock.MagicMock()
+    hook3 = mock.MagicMock()
     handler = middleware.get_exception_handler(pre_hooks=[hook1, hook2, hook3])
 
     resp = await handler(
@@ -469,7 +469,7 @@ async def test_get_exception_handler_pre_hooks_ok():
     assert resp.debug is False
     assert resp.body == b'{"exc_type":"ValueError","type":"about:blank","title":"Unexpected Server Error","status":500,"detail":"test error"}'  # noqa
 
-    hook1.assert_awaited_once()
+    hook1.assert_called_once()
     hook2.assert_called_once()
     hook3.assert_called_once()
 
@@ -493,9 +493,9 @@ async def test_get_exception_handler_pre_hooks_bad_hook():
 
 @pytest.mark.asyncio
 async def test_get_exception_handler_pre_hooks_error():
-    hook1 = AsyncMock()
-    hook2 = MagicMock()
-    hook3 = MagicMock(side_effect=ValueError('hook error'))
+    hook1 = mock.AsyncMock()
+    hook2 = mock.MagicMock()
+    hook3 = mock.MagicMock(side_effect=ValueError('hook error'))
 
     handler = middleware.get_exception_handler(pre_hooks=[hook1, hook2, hook3])
 
@@ -510,16 +510,16 @@ async def test_get_exception_handler_pre_hooks_error():
 
     assert 'hook error' == str(err.value)
 
-    hook1.assert_awaited_once()
+    hook1.assert_called_once()
     hook2.assert_called_once()
     hook3.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_get_exception_handler_post_hooks_ok():
-    hook1 = AsyncMock()
-    hook2 = MagicMock()
-    hook3 = MagicMock()
+    hook1 = mock.AsyncMock()
+    hook2 = mock.MagicMock()
+    hook3 = mock.MagicMock()
     handler = middleware.get_exception_handler(post_hooks=[hook1, hook2, hook3])
 
     resp = await handler(
@@ -534,7 +534,7 @@ async def test_get_exception_handler_post_hooks_ok():
     assert resp.debug is False
     assert resp.body == b'{"exc_type":"ValueError","type":"about:blank","title":"Unexpected Server Error","status":500,"detail":"test error"}'  # noqa
 
-    hook1.assert_awaited_once()
+    hook1.assert_called_once()
     hook2.assert_called_once()
     hook3.assert_called_once()
 
@@ -558,9 +558,9 @@ async def test_get_exception_handler_post_hooks_bad_book():
 
 @pytest.mark.asyncio
 async def test_get_exception_handler_post_hooks_error():
-    hook1 = AsyncMock()
-    hook2 = MagicMock()
-    hook3 = MagicMock(side_effect=ValueError('hook error'))
+    hook1 = mock.AsyncMock()
+    hook2 = mock.MagicMock()
+    hook3 = mock.MagicMock(side_effect=ValueError('hook error'))
 
     handler = middleware.get_exception_handler(post_hooks=[hook1, hook2, hook3])
 
@@ -575,7 +575,7 @@ async def test_get_exception_handler_post_hooks_error():
 
     assert 'hook error' == str(err.value)
 
-    hook1.assert_awaited_once()
+    hook1.assert_called_once()
     hook2.assert_called_once()
     hook3.assert_called_once()
 
