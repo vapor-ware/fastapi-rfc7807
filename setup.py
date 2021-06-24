@@ -38,12 +38,10 @@ setup(
         'fastapi_rfc7807': ['py.typed'],
     },
     include_package_data=True,
-    python_requires='>=3.8',
+    python_requires='>=3.6',
     install_requires=[
         'fastapi',
-        # FIXME: temporarily pinned as the 0.14.x release has breaking changes and fastapi
-        #   has not yet been updated for them.
-        'starlette==0.13.6',
+        'starlette',
         'pydantic',
     ],
     keywords=[
@@ -52,7 +50,10 @@ setup(
     classifiers=[
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
     ],
