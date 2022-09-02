@@ -15,6 +15,7 @@ from fastapi.openapi.utils import get_model_definitions, get_openapi
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY, HTTP_500_INTERNAL_SERVER_ERROR
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import schema
@@ -53,7 +54,7 @@ class ProblemResponse(Response):
             p = from_exception(content)
         else:
             p = Problem(
-                status=500,
+                status=HTTP_500_INTERNAL_SERVER_ERROR,
                 title='Application Error',
                 detail='Got unexpected content when trying to generate error response',
                 content=str(content),
@@ -209,7 +210,7 @@ def from_http_exception(exc: HTTPException) -> Problem:
 def from_request_validation_error(exc: RequestValidationError) -> Problem:
     """Create a new Problem instance from a RequestValidationError.
 
-    The Problem will take on a status code of 400 Bad Request, indicating that
+    The Problem will take on a status code of 422 Unprocessable Entity, indicating that
     the user provided data which the server will not process. The title will
     be "Validation Error". The specifics of which fields failed validation
     checks are included as additional Problem context.
@@ -222,7 +223,7 @@ def from_request_validation_error(exc: RequestValidationError) -> Problem:
     """
     return Problem(
         title='Validation Error',
-        status=400,
+        status=HTTP_422_UNPROCESSABLE_ENTITY,
         detail='One or more user-provided parameters are invalid',
         errors=exc.errors(),
     )
@@ -251,7 +252,7 @@ def from_exception(exc: Exception) -> Problem:
     """
     return Problem(
         title='Unexpected Server Error',
-        status=500,
+        status=HTTP_500_INTERNAL_SERVER_ERROR,
         detail=str(exc),
         exc_type=exc.__class__.__name__,
     )
