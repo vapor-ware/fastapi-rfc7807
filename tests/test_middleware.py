@@ -68,10 +68,10 @@ class TestProblemResponse:
 
         assert resp.media_type == 'application/problem+json'
         assert resp.debug is False
-        assert resp.status_code == 400
+        assert resp.status_code == 422
         assert json.loads(resp.body) == {
             'type': 'about:blank',
-            'status': 400,
+            'status': 422,
             'title': 'Validation Error',
             'detail': 'One or more user-provided parameters are invalid',
             'errors': [
@@ -279,10 +279,10 @@ class TestProblemMiddleware:
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get('/')
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         assert response.headers['Content-Type'] == 'application/problem+json'
         assert response.json() == {
-            'status': 400,
+            'status': 422,
             'title': 'Validation Error',
             'type': 'about:blank',
             'detail': 'One or more user-provided parameters are invalid',
@@ -387,7 +387,7 @@ def test_from_request_validation_error():
     assert problem == middleware.Problem(
         type='',
         title='Validation Error',
-        status=400,
+        status=422,
         detail='One or more user-provided parameters are invalid',
         errors=[
             {
