@@ -384,6 +384,7 @@ def register(
 
     app.add_exception_handler(HTTPException, _handler)
     app.add_exception_handler(RequestValidationError, _handler)
+    app.add_exception_handler(Problem, _handler)
     app.add_middleware(ProblemMiddleware, debug=app.debug, pre_hooks=pre_hooks, post_hooks=post_hooks)
 
     if add_schema:
