@@ -11,7 +11,8 @@ from typing import (Any, Awaitable, Callable, Dict, Mapping, Optional,
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from fastapi.openapi.utils import get_model_definitions, get_openapi
+from fastapi.openapi.utils import get_openapi
+from fastapi._compat import get_model_definitions
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import Response
